@@ -7,7 +7,7 @@ Cada fila del CSV tiene:
 
 Uso:
     python captura/registrar.py --listar
-    python captura/registrar.py --interfaz wlp0s20f3 --intervalo 1 --salida datos/c1.csv
+    python captura/registrar.py --interfaz wlp0s20f3 --salida datos/c1.csv
 """
 
 import argparse
@@ -90,8 +90,9 @@ def main():
     parser.add_argument("--listar", action="store_true",
                         help="mostrar las interfaces de red y salir")
     parser.add_argument("--interfaz", help="interfaz a registrar (ver --listar)")
-    parser.add_argument("--intervalo", type=float, default=1.0,
-                        help="paso de muestreo h en segundos (default: 1)")
+    # 0,1 s alcanza para ver el arranque de TCP; después se puede submuestrear
+    parser.add_argument("--intervalo", type=float, default=0.1,
+                        help="paso de muestreo h en segundos (default: 0.1)")
     parser.add_argument("--salida", default="datos/prueba.csv",
                         help="archivo CSV de salida (default: datos/prueba.csv)")
     args = parser.parse_args()

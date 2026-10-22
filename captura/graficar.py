@@ -40,6 +40,11 @@ def main():
     print(f"  mínimo          {paso.min():.6f}")
     print(f"  máximo          {paso.max():.6f}")
 
+    # Un paso mayor que 1,5 veces el típico indica lecturas salteadas
+    huecos = paso > 1.5 * np.median(paso)
+    print(f"Lecturas salteadas: {np.sum(np.round(paso[huecos] / np.median(paso)) - 1):.0f}"
+          f" (en {np.sum(huecos)} huecos)")
+
     fig, (ax_b, ax_paso) = plt.subplots(2, 1, sharex=True, figsize=(9, 6))
 
     ax_b.plot(t, B / 1e6)

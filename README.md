@@ -16,8 +16,8 @@ pip install -r requirements.txt
 # Ver interfaces de red y sus bytes recibidos
 python captura/registrar.py --listar
 
-# Registrar una corrida (Ctrl+C para terminar)
-python captura/registrar.py --interfaz eth0 --intervalo 1 --salida datos/c1.csv
+# Registrar una corrida cada 0,1 s (Ctrl+C para terminar)
+python captura/registrar.py --interfaz wlp0s20f3 --salida datos/c1.csv
 
 # Revisar una corrida
 python captura/graficar.py datos/c1.csv
