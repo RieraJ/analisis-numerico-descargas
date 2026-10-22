@@ -129,3 +129,5 @@ Procedimiento (dos terminales):
 - [ ] Revisar con Julian los valores sintéticos de los tests, después de las corridas
 - [ ] `analisis.ipynb` con las etapas 0 a 6
 - [ ] Informe y exposición
+
+Para retomar (22/10): se espera que Julian haga las corridas. Mientras tanto se puede adelantar (1) las partes del informe que no dependen de datos (planteo, modelo, métodos, resultados de los tests) o (2) el código de la etapa 0 con tests sintéticos (inicio y fin de la descarga, tasa de fondo, submuestreo). `datos/c3.csv` (sin seguimiento en git) es una prueba del 22/10 sin descarga y con columnas agregadas a mano: no sirve, se reemplaza con la C3 real.
