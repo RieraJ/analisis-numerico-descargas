@@ -78,14 +78,21 @@ Dato para el informe: con `dD/dt = v(t)` (lado derecho que no depende de D), Heu
 
 ## Corridas previstas
 
-| Corrida | Conexión | Momento del día |
-|---|---|---|
-| C1 | Cable | Horario de poco uso |
-| C2 | Cable | Horario pico |
-| C3 | Wi-Fi cerca del router | Horario de poco uso |
-| C4 | Wi-Fi lejos del router | Horario de poco uso |
+Todas por Wi-Fi (la notebook no tiene puerto de red), en el departamento de Julian (red sin otros usuarios).
 
-Procedimiento: 10 s de registro sin descargar (tráfico de fondo), descarga completa de un archivo grande de tamaño conocido (por ejemplo, una ISO de Linux), 10 s más de registro. Anotar el tamaño exacto en bytes.
+| Corrida | Banda | Ubicación | Carga extra |
+|---|---|---|---|
+| C1 | 5 GHz | Cerca del router | Ninguna (referencia) |
+| C2 | 5 GHz | Cerca del router | Netflix en el TV |
+| C3 | 2.4 GHz | Cerca del router | Ninguna |
+| C4 | 2.4 GHz | Lejos del router | Ninguna |
+
+Comparaciones (cambia una sola variable): C1 vs C2 → otro dispositivo usando la red; C1 vs C3 → banda; C3 vs C4 → distancia.
+
+Procedimiento: 10 s de registro sin descargar (tráfico de fondo), descarga completa de un archivo grande de tamaño conocido (por ejemplo, una ISO de Linux), 10 s más de registro. Anotar el tamaño exacto en bytes (`stat -c %s archivo`).
+- Mismo archivo en las cuatro corridas y en horarios parecidos.
+- C2: Netflix arrancado antes del registro, calidad fija (alta), TV conectado por Wi-Fi.
+- No editar los CSV después de la captura.
 
 ## Estado
 
