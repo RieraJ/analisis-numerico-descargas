@@ -33,8 +33,8 @@ metodos/
   raices.py            bisección, punto fijo, Newton-Raphson, secante (devuelven raíz + historial de iteraciones)
 tests/                 pytest, un archivo por módulo de metodos/
 analisis.ipynb         experimentos, tablas y gráficos del informe
-DEFENSA.md             preguntas probables en la exposición, con respuestas cortas
-requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv), README.md
+DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
+requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv, DEFENSA.md), README.md
 ```
 
 ## Especificación de la captura
