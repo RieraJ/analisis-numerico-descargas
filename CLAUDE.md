@@ -101,6 +101,6 @@ Procedimiento: 10 s de registro sin descargar (tráfico de fondo), descarga comp
 - [ ] Corridas C1 a C4 (las hace Julian)
 - [x] `metodos/derivacion.py` e `integracion.py` con tests (núcleo del proyecto)
 - [x] `metodos/regresion.py` e `interpolacion.py` con tests
-- [ ] `metodos/raices.py` con tests
+- [x] `metodos/raices.py` con tests
 - [ ] `analisis.ipynb` con las seis etapas
 - [ ] Informe y exposición
