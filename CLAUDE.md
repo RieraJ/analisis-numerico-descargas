@@ -42,6 +42,8 @@ analisis/
                        errores_por_desfase → error relativo de los k desfases (etapa 3)
   modelo.py            etapa 4: rampa, ajustar_tau (regresión por el origen), origen_libre (control),
                        r2_velocidad_regimen, velocidad_modelo (v̂), descargado_modelo (D̂)
+  faltantes.py         etapa 5: reconstruir_bloque (lineal, Newton y Lagrange grado 3, spline con todas),
+                       error_maximo, posiciones_equiespaciadas, hueco_con_caida
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -209,6 +211,20 @@ Etapa 4 (`analisis/modelo.py`, sección 4 del notebook):
 - En la práctica el modelo es velocidad constante con retraso τ: D̂ ≈ v∞(t − τ); τ mueve el fin previsto menos de 0,2 % de la duración.
 - En la corrida sintética (test), t_ini queda un paso después del arranque y la regresión por el origen da τ = 0,24 en vez de 0,30; el origen libre lo recupera exacto. Por eso se informa el control.
 
+Etapa 5 (`analisis/faltantes.py`, sección 5 del notebook). Huecos de k = 1, 5, 10, 30 lecturas en B_d: 100 posiciones parejas en régimen por corrida (separadas en con y sin caída, v < 0,5·v∞) y uno centrado en t_ini. Además de los métodos de la consigna, la recta (Newton grado 1) como referencia. Error = máx |B̂ − B| / bytes del hueco, mediana en %:
+
+| | lineal k=1 / 30 | grado 3 k=1 / 30 | spline k=1 / 30 |
+|---|---|---|---|
+| régimen sin caída | 4,4 / 1,5 | 5,2 / 3,4 | 6,0 / 4,4 |
+| régimen con caída | 49,9 / 7,3 | 22,4 / 9,0 | 18,4 / 10,4 |
+| arranque (4 casos) | 12,3 / 52,1 | 5,8 / 23,2 | 8,1 / 23,0 |
+
+- Newton = Lagrange: diferencia máxima 7·10⁻⁶ B (redondeo).
+- Régimen sin caída: gana la recta (70–84 % de los huecos); grado 3 y spline siguen las irregularidades de los vecinos. En kB el error crece con k (recta: 77 → 459 kB); en relativo baja porque el hueco tiene más bytes.
+- Arranque (B_d curvada): grado 3 y spline mucho mejores que la recta.
+- Caída dentro del hueco: ningún método la recupera.
+- Sin Runge con grado 3 ni con el spline.
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -226,24 +242,25 @@ Etapa 4 (`analisis/modelo.py`, sección 4 del notebook):
 - [x] Etapa 2: `analisis/volumen.py` con tests y sección en el notebook
 - [x] Etapa 3: `errores_por_desfase` con tests y sección en el notebook
 - [x] Etapa 4: `analisis/modelo.py` con tests y sección en el notebook
-- [ ] `analisis.ipynb` con las etapas 5 y 6
+- [x] Etapa 5: `analisis/faltantes.py` con tests y sección en el notebook
+- [ ] `analisis.ipynb` con la etapa 6
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: etapas 0 a 4 con tests y aplicadas a C1 a C4 en el notebook. 96 tests pasan.
+Hecho: etapas 0 a 5 con tests y aplicadas a C1 a C4 en el notebook. 104 tests pasan.
 
-Sigue la **etapa 5 (muestras faltantes)**, en una sección nueva de `analisis.ipynb`:
-- Borrar bloques de k lecturas reales consecutivas de B (B_d) y reconstruirlas: Newton y Lagrange con pocos vecinos (polinomio de grado 3: 2 lecturas a cada lado del hueco), spline cúbico natural con todas las restantes. Métodos en `metodos/interpolacion.py`.
-- Referencia: los valores borrados. Error en bytes y relativo a lo que entró en el hueco.
-- Probar varios k (por ejemplo 1, 5, 10, 30 lecturas) y varias posiciones del hueco: en régimen, en la rampa y en una caída de velocidad (etapa 1). Como en las etapas 2 y 3, una sola posición da un valor al azar: resumir sobre muchas posiciones.
-- Newton y Lagrange tienen que dar lo mismo (mismo polinomio); comprobarlo y decir que la diferencia es de forma y costo.
-- Mostrar Runge solo si aparece con los datos; no forzarlo (con grado 3 no debería).
-- Lo reutilizable (borrar un bloque y reconstruirlo) va a `analisis/` (por ejemplo `analisis/faltantes.py`), con test.
+Sigue la **etapa 6 (predicción del fin)**, la última del análisis, en una sección nueva de `analisis.ipynb`:
+- Para cada corrida, con los datos hasta el 25, 50 y 75 % del progreso (B_d ≤ fracción·S'), estimar v∞ (regresión de B_d en lo que haya de régimen: desde el 20 % de los bytes hasta el corte) y τ (etapa 4, `ajustar_tau`; la rampa ya está entera al 25 %).
+- Resolver `f(t) = D̂(t) − S' = 0`, con `S' = S·(1 + p_C1)`, por bisección, punto fijo, Newton y secante (`metodos/raices.py`). Newton usa f'(t) = v̂(t); punto fijo usa φ(t) = S'/v∞ + τ(1 − e^(−t/τ)).
+- Agregar f y φ a `analisis/modelo.py`, con tests.
+- Comparar el fin previsto (t_ini + t*) contra t_fin real y contra la estimación ingenua: t_actual + (S' − B_d actual) / v actual. Como v tiene caídas (etapa 1), conviene informar la ingenua con v de 3 puntos, h = 0,1 s, y también con la velocidad media del último segundo o similar; decidirlo mirando los datos y documentarlo.
+- Informar iteraciones de cada método (historial) y su convergencia (orden observado, ya verificado en los tests de raíces).
+- Ojo con C4: con todos los datos, S'/v∞ + τ ya se adelanta unos 10 s al fin real (exploración de la etapa 4); ver por qué (¿v∞ de 20–80 % distinto de la velocidad del último tramo?).
 
 Cómo trabajar con el notebook:
 - `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S`, todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`) y `tau` (etapa 4). También `colores` (uno por corrida).
-- Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
+- Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb` (tarda ~30 s por la etapa 5).
 - Para editar celdas desde un script, usar `nbformat` (mantiene los ids de las celdas).
 
-Después: etapa 6 (predicción del fin), con f y φ agregadas a `analisis/modelo.py`.
+Después: opcional EDO (Euler, Heun, RK4), informe y exposición. Al final, revisar `DEFENSA.md` (ver memoria).
