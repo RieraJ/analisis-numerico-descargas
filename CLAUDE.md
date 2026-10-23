@@ -31,7 +31,9 @@ metodos/
   interpolacion.py     diferencias divididas de Newton, Lagrange, spline cúbico natural
   regresion.py         mínimos cuadrados lineal (ecuaciones normales resueltas a mano)
   raices.py            bisección, punto fijo, Newton-Raphson, secante (devuelven raíz + historial de iteraciones)
-tests/                 pytest, un archivo por módulo de metodos/
+analisis/
+  preparacion.py       etapa 0: carga, paso medio, submuestreo, tasa de fondo, v∞, inicio y fin, sobrecarga
+tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         experimentos, tablas y gráficos del informe
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
 requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv, DEFENSA.md), README.md
@@ -121,7 +123,7 @@ Hechas el 23/10 (detalle en `datos/corridas.csv`): cerca = 4 m del router; lejos
 
 Para el informe:
 - El contador solo ve el tráfico de la notebook. En C2, Netflix no aparece como bytes: influye solo porque compite por el Wi-Fi.
-- `wget` muestra las velocidades en unidades de 1024 aunque diga "MB/s". Se confirma en la etapa 1 comparando con v∞.
+- `wget` muestra las velocidades en unidades de 1024 aunque diga "MB/s", y es la velocidad media S/(t_fin − t_ini), no v∞. Confirmado en la etapa 0: en C2 a C4, S/duración coincide con lo de `wget` tomando 1 MB = 2²⁰ B.
 
 ## Estado
 
@@ -133,7 +135,8 @@ Para el informe:
 - [x] `metodos/regresion.py` e `interpolacion.py` con tests
 - [x] `metodos/raices.py` con tests
 - [x] Revisar con Julian los valores sintéticos de los tests (23/10: S y τ de raíces llevados a las magnitudes reales)
+- [x] Etapa 0: `analisis/preparacion.py` con tests
 - [ ] `analisis.ipynb` con las etapas 0 a 6
 - [ ] Informe y exposición
 
-Para retomar (23/10): con las corridas hechas, sigue la etapa 0 en `analisis/preparacion.py` con tests sintéticos (tasa de fondo, v∞, inicio y fin de la descarga, sobrecarga, submuestreo), aplicada después a C1 a C4 en `analisis.ipynb`.
+Para retomar (23/10): la etapa 0 ya está en `analisis/preparacion.py` y en la primera sección de `analisis.ipynb`. Sigue la etapa 1 (velocímetro). Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.

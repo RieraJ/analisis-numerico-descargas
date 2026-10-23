@@ -32,6 +32,7 @@ pytest
 captura/        registro del contador de bytes y revisión de corridas
 datos/          un CSV por corrida
 metodos/        métodos numéricos propios (NumPy, sin SciPy)
+analisis/       etapas del análisis que usan esos métodos (preparación de cada corrida)
 tests/          pytest; SciPy solo se usa acá para verificar
 analisis.ipynb  experimentos, tablas y gráficos del informe
 ```
