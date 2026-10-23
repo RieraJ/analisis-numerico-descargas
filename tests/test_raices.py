@@ -101,9 +101,10 @@ def test_newton_menos_iteraciones_que_biseccion():
 # --- Problema del proyecto con valores sintéticos -------------------------
 # f(t) = D̂(t) − S,  D̂(t) = v∞ [t − τ(1 − e^(−t/τ))]
 
+# Magnitudes parecidas a las corridas: régimen en menos de 0,5 s, ISO de 2,9 GB
 V_INF = 1e7   # 10 MB/s
-TAU = 3.0     # s
-S = 7e8       # 700 MB
+TAU = 0.3     # s
+S = 2.9e9     # 2,9 GB
 
 
 def D_modelo(t):

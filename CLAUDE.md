@@ -132,8 +132,8 @@ Para el informe:
 - [x] `metodos/derivacion.py` e `integracion.py` con tests (núcleo del proyecto)
 - [x] `metodos/regresion.py` e `interpolacion.py` con tests
 - [x] `metodos/raices.py` con tests
-- [ ] Revisar con Julian los valores sintéticos de los tests, después de las corridas
+- [x] Revisar con Julian los valores sintéticos de los tests (23/10: S y τ de raíces llevados a las magnitudes reales)
 - [ ] `analisis.ipynb` con las etapas 0 a 6
 - [ ] Informe y exposición
 
-Para retomar (23/10): con las corridas hechas, sigue (1) revisar los valores sintéticos de los tests y (2) la etapa 0 en `analisis/preparacion.py` con tests sintéticos (tasa de fondo, v∞, inicio y fin de la descarga, sobrecarga, submuestreo), aplicada después a C1 a C4 en `analisis.ipynb`.
+Para retomar (23/10): con las corridas hechas, sigue la etapa 0 en `analisis/preparacion.py` con tests sintéticos (tasa de fondo, v∞, inicio y fin de la descarga, sobrecarga, submuestreo), aplicada después a C1 a C4 en `analisis.ipynb`.
