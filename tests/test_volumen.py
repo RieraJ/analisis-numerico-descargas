@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from analisis.preparacion import preparar_corrida
-from analisis.volumen import indices_muestreo, volumen_desde_velocidad
+from analisis.volumen import errores_por_desfase, indices_muestreo, volumen_desde_velocidad
 from metodos.derivacion import derivada_3_puntos
 from tests.test_preparacion import H, V_INF, corrida_sintetica
 
@@ -70,3 +70,25 @@ def test_corrida_sintetica_con_muestras_cada_1_s():
         r = volumen_desde_velocidad(t, p["v"], p["B_d"], p["i_ini"], p["i_fin"], 10, desfase)
         for metodo in ("trapecios", "simpson"):
             assert abs(r[metodo] - r["referencia"]) < V_INF * r["H"]
+
+
+# --- Todos los desfases ---------------------------------------------------
+
+def test_errores_por_desfase_coinciden_con_cada_desfase():
+    t, B, S = corrida_sintetica()
+    p = preparar_corrida(t, B, S)
+    errores = errores_por_desfase(t, p["v"], p["B_d"], p["i_ini"], p["i_fin"], k=50)
+    assert len(errores["trapecios"]) == 50
+    for desfase in (0, 17, 49):
+        r = volumen_desde_velocidad(t, p["v"], p["B_d"], p["i_ini"], p["i_fin"], 50, desfase)
+        assert errores["trapecios"][desfase] == pytest.approx((r["trapecios"] - r["referencia"]) / r["referencia"])
+        assert errores["simpson"][desfase] == pytest.approx((r["simpson"] - r["referencia"]) / r["referencia"])
+
+
+def test_errores_por_desfase_nulos_si_la_velocidad_es_lineal():
+    t = np.arange(0, 100 + H / 2, H)
+    B_d = 3 * t**2 + 2 * t
+    v = derivada_3_puntos(B_d, H)
+    errores = errores_por_desfase(t, v, B_d, i_ini=100, i_fin=600, k=30)
+    assert np.allclose(errores["trapecios"], 0, atol=1e-10)
+    assert np.allclose(errores["simpson"], 0, atol=1e-10)

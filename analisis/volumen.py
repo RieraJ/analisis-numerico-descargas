@@ -46,3 +46,18 @@ def volumen_desde_velocidad(t, v, B_d, i_ini, i_fin, k, desfase=0):
         "simpson": simpson(v[indices], H),
         "referencia": B_d[indices[-1]] - B_d[indices[0]],
     }
+
+
+def errores_por_desfase(t, v, B_d, i_ini, i_fin, k):
+    """Error relativo (D − referencia) / referencia para los k desfases posibles.
+
+    Con muestras cada k lecturas hay k formas de ubicarlas (desfase 0 a k − 1).
+    Devuelve un diccionario con un array de k errores para trapecios y otro
+    para Simpson.
+    """
+    errores = {"trapecios": np.empty(k), "simpson": np.empty(k)}
+    for desfase in range(k):
+        r = volumen_desde_velocidad(t, v, B_d, i_ini, i_fin, k, desfase)
+        for metodo in errores:
+            errores[metodo][desfase] = (r[metodo] - r["referencia"]) / r["referencia"]
+    return errores

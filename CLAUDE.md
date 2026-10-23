@@ -39,6 +39,7 @@ analisis/
                        error_en_regimen(v, v∞, B_d) → media y desvío de v − v∞
   volumen.py           etapa 2: indices_muestreo (una de cada k, alineadas con el fin, con desfase),
                        volumen_desde_velocidad → D por trapecios y Simpson + referencia B_d(t_b) − B_d(t_a)
+                       errores_por_desfase → error relativo de los k desfases (etapa 3)
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -174,8 +175,22 @@ Etapa 2 (`analisis/volumen.py`, sección 2 del notebook). v de 3 puntos (h = 0,1
 
 - Control (H = h): error < 0,012 % (telescopado).
 - Con H = 1 s, el signo y el tamaño del error dependen del desfase: las muestras caen o no en las caídas cortas de la etapa 1.
-- Simpson no mejora a trapecios (v no es suave). El promedio de trapecios sobre los 10 desfases es ≈ 0 porque juntos usan todas las lecturas; el de Simpson queda positivo (0,1–0,5 %). La causa de ese sesgo no se investigó.
+- Simpson no mejora a trapecios (v no es suave). El promedio de trapecios sobre los 10 desfases es ≈ 0 porque juntos usan todas las lecturas; el de Simpson queda positivo (0,1–0,5 %); con H = 1 s es mayormente variación de las caídas (ver etapa 3 para el sesgo de los bordes).
 - p con D en lugar del contador: de 3,2 a 6,9 % según el desfase, contra 5,0 % del contador. El error de integración es del orden de la sobrecarga: para medir p hace falta el contador.
+
+Etapa 3 (`errores_por_desfase`, sección 3 del notebook). Misma integración con H = 1, 5, 10, 30 s y los k desfases de cada H. ECM sobre los desfases, en %:
+
+| | trap. H=1 | 5 | 10 | 30 | Simpson H=1 | 5 | 10 | 30 | pendiente trap. / Simpson |
+|---|---|---|---|---|---|---|---|---|---|
+| C1 | 0,51 | 1,50 | 2,88 | 7,03 | 0,58 | 1,92 | 3,42 | 8,32 | 0,77 / 0,78 |
+| C2 | 0,98 | 2,21 | 3,64 | 7,33 | 1,06 | 2,32 | 3,63 | 7,62 | 0,59 / 0,58 |
+| C3 | 0,43 | 2,75 | 4,33 | 7,88 | 0,67 | 3,03 | 4,53 | 8,68 | 0,87 / 0,76 |
+| C4 | 1,19 | 2,42 | 3,74 | 6,06 | 0,97 | 2,72 | 3,87 | 6,78 | 0,48 / 0,57 |
+
+- Pendientes log-log 0,5–0,9, lejos de 2 y 4. Peor desfase con H = 30 s: hasta 35 %.
+- Control solo en régimen (sin saltos de arranque y final): pendientes 0,5–0,7 y ECM parecido. El error lo dominan las caídas de v (muestreo), no los bordes. Con errores independientes sería √H.
+- Sesgo de Simpson con la descarga completa: si v es una caja (0 afuera, v∞ adentro), Simpson da H·v∞/3 de más con n par y H·v∞/6 con n impar (`test_simpson_sobreestima_una_caja`); en relativo, ≈ H/(3·duración). Con H = 10 y 30 s coincide en C1 a C3 (C1, H = 30: 3,58 % contra 3,75 %). En régimen desaparece (±0,5 % sin signo fijo). Trapecios no tiene sesgo.
+- Conclusión práctica: trapecios y muestrear lo más seguido posible.
 
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
@@ -192,22 +207,24 @@ Etapa 2 (`analisis/volumen.py`, sección 2 del notebook). v de 3 puntos (h = 0,1
 - [x] Etapa 0: `analisis/preparacion.py` con tests
 - [x] Etapa 1: `analisis/velocimetro.py` con tests y sección en el notebook
 - [x] Etapa 2: `analisis/volumen.py` con tests y sección en el notebook
-- [ ] `analisis.ipynb` con las etapas 3 a 6
+- [x] Etapa 3: `errores_por_desfase` con tests y sección en el notebook
+- [ ] `analisis.ipynb` con las etapas 4 a 6
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: etapas 0, 1 y 2 con tests y aplicadas a C1 a C4 en el notebook. 87 tests pasan.
+Hecho: etapas 0 a 3 con tests y aplicadas a C1 a C4 en el notebook. 90 tests pasan.
 
-Sigue la **etapa 3 (efecto del muestreo)**, en una sección nueva de `analisis.ipynb`:
-- La misma integración de la etapa 2 con H = 1, 5, 10 y 30 s (k = 10, 50, 100, 300), con `volumen_desde_velocidad`.
-- Como en la etapa 2 el error depende del desfase, para cada H usar los k desfases y resumir con el error cuadrático medio (y el máximo). Un solo desfase da un valor al azar.
-- Gráfico log-log: error contra H, trapecios y Simpson, una curva por corrida. Informar la pendiente que dé (regresión lineal sobre log-log, con `metodos/regresion.py`); no se espera 2 ni 4 (ver nota de la etapa 3).
-- Si hace falta una función nueva (por ejemplo, el error sobre todos los desfases), va a `analisis/volumen.py` con test.
+Sigue la **etapa 4 (parámetros del modelo)**, en una sección nueva de `analisis.ipynb`:
+- v∞ ya está (etapa 0). Agregar su R² (recta de B_d en régimen, con `coeficiente_determinacion`).
+- τ por regresión por el origen sobre `ln(1 − v/v∞) = −t/τ`, con t desde t_ini y solo la rampa con v < 0,9·v∞ (modelo, punto 5). Informar cuántos puntos tiene la rampa y el R².
+- Cuidado: t_ini es el primer instante con v > 0,1·v∞, así que en t = 0 la velocidad no es 0 (el modelo dice v(0) = 0). Antes de t_ini hay unas lecturas con v ≈ 0,07·v∞ (en la etapa 2 se vio ~0,7 MB/s en C1). Ver qué hacer con eso, decidirlo con Julian y documentarlo; no forzar el ajuste.
+- Es probable que τ quede mal determinado (rampa < 0,5 s, pocos puntos con h = 0,1 s). Si es así, se informa y el modelo se reduce a velocidad constante (punto 5).
+- Lo reutilizable (rampa, τ, v̂ y D̂ del modelo) va a `analisis/modelo.py`, con tests. D̂, f y φ se usan también en la etapa 6.
 
 Cómo trabajar con el notebook:
-- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`).
+- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`). También `colores` (uno por corrida).
 - Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
 - Para editar celdas desde un script, usar `nbformat` (mantiene los ids de las celdas).
 
-Después: etapas 4 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
+Después: etapas 5 y 6 en orden, una por paso y commit.

@@ -76,6 +76,22 @@ def test_simpson_impar_sigue_siendo_mejor_que_trapecios():
     assert abs(simpson(y, h) - exacto) < abs(trapecios(y, h) - exacto)
 
 
+# --- Función caja (como una descarga: 0 afuera, constante adentro) --------
+
+def test_simpson_sobreestima_una_caja():
+    # Muestras 0, c, c, ..., c, 0: los extremos caen afuera de la caja.
+    # Trapecios da h·c por cada muestra de adentro. Simpson, con pesos
+    # 1, 4, 2, ..., 2, 4, 1 (/3), da h·c/3 de más si n es par; si n es impar
+    # (último intervalo por trapecios), h·c/6 de más.
+    h, c = 2.0, 5.0
+    for n in (8, 10, 9, 11):  # cantidad de intervalos
+        y = np.full(n + 1, c)
+        y[0] = y[-1] = 0.0
+        exceso = h * c / 3 if n % 2 == 0 else h * c / 6
+        assert trapecios(y, h) == pytest.approx((n - 1) * h * c)
+        assert simpson(y, h) - trapecios(y, h) == pytest.approx(exceso)
+
+
 def test_un_solo_intervalo():
     assert simpson([1.0, 3.0], 2.0) == pytest.approx(4.0)
 
