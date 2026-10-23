@@ -117,12 +117,18 @@ Procedimiento (dos terminales):
 - C2: Netflix arrancado antes del registro, calidad fija (alta), TV conectado por Wi-Fi.
 - No editar los CSV después de la captura.
 
+Hechas el 23/10 (detalle en `datos/corridas.csv`): cerca = 4 m del router; lejos = balcón a 6 m con la puerta cerrada. Las cuatro con 0 lecturas salteadas y más de 30 s quietos al principio y al final. A C4 le falta la señal (no se midió) y a C1, la línea final de `wget`.
+
+Para el informe:
+- El contador solo ve el tráfico de la notebook. En C2, Netflix no aparece como bytes: influye solo porque compite por el Wi-Fi.
+- `wget` muestra las velocidades en unidades de 1024 aunque diga "MB/s". Se confirma en la etapa 1 comparando con v∞.
+
 ## Estado
 
 - [x] Estructura base: requirements.txt, .gitignore, README.md, entorno virtual
 - [x] Captura: `registrar.py` y `graficar.py`, probados con una corrida corta
 - [x] Revisión de la especificación para la defensa (`DEFENSA.md`)
-- [ ] Corridas C1 a C4 (las hace Julian)
+- [x] Corridas C1 a C4 (23/10)
 - [x] `metodos/derivacion.py` e `integracion.py` con tests (núcleo del proyecto)
 - [x] `metodos/regresion.py` e `interpolacion.py` con tests
 - [x] `metodos/raices.py` con tests
@@ -130,4 +136,4 @@ Procedimiento (dos terminales):
 - [ ] `analisis.ipynb` con las etapas 0 a 6
 - [ ] Informe y exposición
 
-Para retomar (22/10): se espera que Julian haga las corridas. Mientras tanto se puede adelantar (1) las partes del informe que no dependen de datos (planteo, modelo, métodos, resultados de los tests) o (2) el código de la etapa 0 con tests sintéticos (inicio y fin de la descarga, tasa de fondo, submuestreo). `datos/c3.csv` (sin seguimiento en git) es una prueba del 22/10 sin descarga y con columnas agregadas a mano: no sirve, se reemplaza con la C3 real.
+Para retomar (23/10): con las corridas hechas, sigue (1) revisar los valores sintéticos de los tests y (2) la etapa 0 en `analisis/preparacion.py` con tests sintéticos (tasa de fondo, v∞, inicio y fin de la descarga, sobrecarga, submuestreo), aplicada después a C1 a C4 en `analisis.ipynb`.

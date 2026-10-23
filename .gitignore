@@ -5,3 +5,4 @@ __pycache__/
 *.iso
 datos/prueba*.csv
 DEFENSA.md
+.~lock.*

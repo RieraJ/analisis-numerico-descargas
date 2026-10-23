@@ -1,1 +1,5 @@
-corrida,fecha,hora_inicio,banda,ubicacion,carga_extra,archivo,tamano_bytes,interfaz,intervalo_s,notas
+corrida,fecha,hora_inicio,banda,ubicacion,carga_extra,archivo,tamano_bytes,interfaz,intervalo_s,senal_dbm,wget_vel,notas
+C1,2026-10-23,10:34:09,5 GHz,cerca del router (4 m),ninguna,ubuntu-26.04.1-live-server-amd64.iso,2927861760,wlp0s20f3,0.1,-54,,"sin datos de wget; señal medida después de la corrida"
+C2,2026-10-23,11:03:13,5 GHz,cerca del router (4 m),Netflix en el TV,ubuntu-26.04.1-live-server-amd64.iso,2927861760,wlp0s20f3,0.1,-55,10.2 MB/s,
+C3,2026-10-23,11:15:20,2.4 GHz,cerca del router (4 m),ninguna,ubuntu-26.04.1-live-server-amd64.iso,2927861760,wlp0s20f3,0.1,-42,8.53 MB/s,
+C4,2026-10-23,11:25:25,2.4 GHz,"balcón (6 m), puerta cerrada",ninguna,ubuntu-26.04.1-live-server-amd64.iso,2927861760,wlp0s20f3,0.1,,4.30 MB/s,señal no medida
