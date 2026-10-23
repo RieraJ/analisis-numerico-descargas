@@ -40,6 +40,8 @@ analisis/
   volumen.py           etapa 2: indices_muestreo (una de cada k, alineadas con el fin, con desfase),
                        volumen_desde_velocidad → D por trapecios y Simpson + referencia B_d(t_b) − B_d(t_a)
                        errores_por_desfase → error relativo de los k desfases (etapa 3)
+  modelo.py            etapa 4: rampa, ajustar_tau (regresión por el origen), origen_libre (control),
+                       r2_velocidad_regimen, velocidad_modelo (v̂), descargado_modelo (D̂)
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -76,6 +78,7 @@ Por qué 0,1 s: el arranque de TCP dura unas décimas de segundo (en la prueba d
    - `v∞`: pendiente de `B_d(t)` en régimen (entre el 20 % y el 80 % de los bytes de la descarga), por regresión lineal.
    - `τ`: regresión por el origen sobre `ln(1 − v/v∞) = −t/τ`, usando solo la rampa con `v < 0,9·v∞` (si `v ≥ v∞` el logaritmo no está definido).
    - Si la rampa tiene muy pocos puntos (τ del orden de h), se informa así: τ queda mal determinado y el modelo se reduce a velocidad constante. No se fuerza el ajuste.
+   - Origen de t: `t_ini`, aunque ahí v ≈ 0,15·v∞ y no 0. Se controla con una recta con ordenada (`origen_libre`), que deja que los datos ubiquen el origen: en C1 a C3 cae a menos de 0,04 s de `t_ini`. Se descartó tomar como origen el último instante con v ≈ 0 (unos 0,8 s antes): necesita un umbral arbitrario y empeora el ajuste (τ de 1,5 a 2,5 s, R² < 0,6), y para la predicción del fin la diferencia es de 1,2 s como máximo.
 6. **Instante de fin, como predicción durante la descarga:** con los datos hasta el 25 %, 50 % y 75 % del progreso, estimar v∞ y τ y resolver `f(t) = D̂(t) − S·(1 + p) = 0`. Se usa `p` medido en C1, la corrida de referencia.
    - La ecuación `t + τe^(−t/τ) = S'/v∞ + τ` (con `S' = S·(1 + p)`) es trascendente: su forma cerrada necesita la función W de Lambert. `S'/v∞ + τ` es la aproximación asintótica, con error `τ·e^(−t/τ)`.
    - Newton usa `f'(t) = v̂(t)`.
@@ -192,6 +195,20 @@ Etapa 3 (`errores_por_desfase`, sección 3 del notebook). Misma integración con
 - Sesgo de Simpson con la descarga completa: si v es una caja (0 afuera, v∞ adentro), Simpson da H·v∞/3 de más con n par y H·v∞/6 con n impar (`test_simpson_sobreestima_una_caja`); en relativo, ≈ H/(3·duración). Con H = 10 y 30 s coincide en C1 a C3 (C1, H = 30: 3,58 % contra 3,75 %). En régimen desaparece (±0,5 % sin signo fijo). Trapecios no tiene sesgo.
 - Conclusión práctica: trapecios y muestrear lo más seguido posible.
 
+Etapa 4 (`analisis/modelo.py`, sección 4 del notebook):
+
+| | v∞ | R² v∞ | rampa | τ | R² τ | origen libre: t₀ − t_ini / τ |
+|---|---|---|---|---|---|---|
+| C1 | 11,58 MB/s | 1,0000 | 5 lect. (0,5 s) | 0,31 s | 0,84 | +0,011 s / 0,30 s |
+| C2 | 11,27 MB/s | 0,9999 | 6 lect. (0,6 s) | 0,33 s | 0,78 | +0,034 s / 0,30 s |
+| C3 | 9,43 MB/s | 1,0000 | 5 lect. (0,5 s) | 0,39 s | 0,85 | −0,012 s / 0,41 s |
+| C4 | 4,67 MB/s | 0,9971 | 22 lect. (2,2 s) | 1,13 s | 0,30 | −0,536 s / 1,56 s |
+
+- τ mal determinado (pocos puntos); en C4 la rampa tiene caídas y el ajuste no sirve.
+- La forma del arranque no es la del modelo: v se multiplica por 1,4–1,5 por lectura (arranque lento de TCP, crecimiento acelerado) y se corta en v∞. Antes de t_ini hay ~0,8 s con v < 0,1·v∞.
+- En la práctica el modelo es velocidad constante con retraso τ: D̂ ≈ v∞(t − τ); τ mueve el fin previsto menos de 0,2 % de la duración.
+- En la corrida sintética (test), t_ini queda un paso después del arranque y la regresión por el origen da τ = 0,24 en vez de 0,30; el origen libre lo recupera exacto. Por eso se informa el control.
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -208,23 +225,25 @@ Etapa 3 (`errores_por_desfase`, sección 3 del notebook). Misma integración con
 - [x] Etapa 1: `analisis/velocimetro.py` con tests y sección en el notebook
 - [x] Etapa 2: `analisis/volumen.py` con tests y sección en el notebook
 - [x] Etapa 3: `errores_por_desfase` con tests y sección en el notebook
-- [ ] `analisis.ipynb` con las etapas 4 a 6
+- [x] Etapa 4: `analisis/modelo.py` con tests y sección en el notebook
+- [ ] `analisis.ipynb` con las etapas 5 y 6
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: etapas 0 a 3 con tests y aplicadas a C1 a C4 en el notebook. 90 tests pasan.
+Hecho: etapas 0 a 4 con tests y aplicadas a C1 a C4 en el notebook. 96 tests pasan.
 
-Sigue la **etapa 4 (parámetros del modelo)**, en una sección nueva de `analisis.ipynb`:
-- v∞ ya está (etapa 0). Agregar su R² (recta de B_d en régimen, con `coeficiente_determinacion`).
-- τ por regresión por el origen sobre `ln(1 − v/v∞) = −t/τ`, con t desde t_ini y solo la rampa con v < 0,9·v∞ (modelo, punto 5). Informar cuántos puntos tiene la rampa y el R².
-- Cuidado: t_ini es el primer instante con v > 0,1·v∞, así que en t = 0 la velocidad no es 0 (el modelo dice v(0) = 0). Antes de t_ini hay unas lecturas con v ≈ 0,07·v∞ (en la etapa 2 se vio ~0,7 MB/s en C1). Ver qué hacer con eso, decidirlo con Julian y documentarlo; no forzar el ajuste.
-- Es probable que τ quede mal determinado (rampa < 0,5 s, pocos puntos con h = 0,1 s). Si es así, se informa y el modelo se reduce a velocidad constante (punto 5).
-- Lo reutilizable (rampa, τ, v̂ y D̂ del modelo) va a `analisis/modelo.py`, con tests. D̂, f y φ se usan también en la etapa 6.
+Sigue la **etapa 5 (muestras faltantes)**, en una sección nueva de `analisis.ipynb`:
+- Borrar bloques de k lecturas reales consecutivas de B (B_d) y reconstruirlas: Newton y Lagrange con pocos vecinos (polinomio de grado 3: 2 lecturas a cada lado del hueco), spline cúbico natural con todas las restantes. Métodos en `metodos/interpolacion.py`.
+- Referencia: los valores borrados. Error en bytes y relativo a lo que entró en el hueco.
+- Probar varios k (por ejemplo 1, 5, 10, 30 lecturas) y varias posiciones del hueco: en régimen, en la rampa y en una caída de velocidad (etapa 1). Como en las etapas 2 y 3, una sola posición da un valor al azar: resumir sobre muchas posiciones.
+- Newton y Lagrange tienen que dar lo mismo (mismo polinomio); comprobarlo y decir que la diferencia es de forma y costo.
+- Mostrar Runge solo si aparece con los datos; no forzarlo (con grado 3 no debería).
+- Lo reutilizable (borrar un bloque y reconstruirlo) va a `analisis/` (por ejemplo `analisis/faltantes.py`), con test.
 
 Cómo trabajar con el notebook:
-- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`). También `colores` (uno por corrida).
+- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S`, todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`) y `tau` (etapa 4). También `colores` (uno por corrida).
 - Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
 - Para editar celdas desde un script, usar `nbformat` (mantiene los ids de las celdas).
 
-Después: etapas 5 y 6 en orden, una por paso y commit.
+Después: etapa 6 (predicción del fin), con f y φ agregadas a `analisis/modelo.py`.
