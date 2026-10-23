@@ -31,6 +31,7 @@ metodos/
   interpolacion.py     diferencias divididas de Newton, Lagrange, spline cúbico natural
   regresion.py         mínimos cuadrados lineal (ecuaciones normales resueltas a mano)
   raices.py            bisección, punto fijo, Newton-Raphson, secante (devuelven raíz + historial de iteraciones)
+  edo.py               Euler, Heun, RK4 con paso fijo (devuelven t e y)
 analisis/
   preparacion.py       etapa 0: carga, paso medio, submuestreo, tasa de fondo, v∞, inicio y fin, sobrecarga;
                        preparar_corrida(t, B, S) hace todo y devuelve un diccionario;
@@ -46,6 +47,7 @@ analisis/
                        error_maximo, posiciones_equiespaciadas, hueco_con_caida
   prediccion.py        etapa 6: indice_progreso, estimar_parametros (con datos parciales), resolver_fin
                        (4 métodos), fines_ingenuos, predecir_fin, velocidad_por_tramos
+  edo_modelo.py        opcional: ecuacion_velocidad, error_velocidad (contra v̂), volumen_con_edo (dD/dt = v medida)
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -240,6 +242,13 @@ Etapa 6 (`analisis/prediccion.py`, sección 6 del notebook). Con datos hasta el 
 - C4: la velocidad subió 28 % durante la descarga (4,24 → 5,42 MB/s por quintil de bytes); el modelo (v∞ constante) predice tarde. C1 y C3 estables; C2 sube un poco.
 - Instantánea inservible por las caídas. Último segundo sigue los cambios pero salta cuando cae en una caída.
 
+EDO (`metodos/edo.py`, `analisis/edo_modelo.py`, última sección del notebook). `dv/dt = (v∞ − v)/τ`, v(0) = 0, con v∞ y τ de cada corrida, contra v̂ en [0, 5 s]:
+
+- Orden observado (h = 0,01–0,05 s): Euler 1,01–1,04; Heun 2,02–2,06; RK4 4,02–4,07.
+- Estabilidad: Euler y Heun si h < 2τ, RK4 si h < 2,785τ. Con h = 1 s, en C1 y C2 los tres divergen (error 8 a 230 veces v∞); en C3 Euler y Heun divergen y RK4 da 0,63; en C4 (τ = 1,13 s) los tres son estables. Para simular el arranque hace falta h < τ.
+- Heun = trapecios y RK4 = Simpson sobre las v medidas cada 1 s: diferencias de 10⁻⁶ B (redondeo).
+- En los tests, el orden se mide con el error máximo en la grilla: con el error en un solo punto, RK4 tarda en mostrar orden 4 (cancelación parcial de términos).
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -259,15 +268,15 @@ Etapa 6 (`analisis/prediccion.py`, sección 6 del notebook). Con datos hasta el 
 - [x] Etapa 4: `analisis/modelo.py` con tests y sección en el notebook
 - [x] Etapa 5: `analisis/faltantes.py` con tests y sección en el notebook
 - [x] Etapa 6: `analisis/prediccion.py` con tests y sección en el notebook
+- [x] Opcional EDO: `metodos/edo.py` y `analisis/edo_modelo.py` con tests y sección en el notebook
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: las etapas 0 a 6 del análisis, con tests y aplicadas a C1 a C4 en el notebook. 111 tests pasan.
+Hecho: las etapas 0 a 6 y la parte opcional de EDO, con tests y aplicadas a C1 a C4 en el notebook. 133 tests pasan.
 
 Queda:
-- **Opcional: EDO.** Euler, Heun y RK4 sobre `dv/dt = (v∞ − v)/τ` contra la solución exacta `v̂`; con `dD/dt = v(t)`, Heun = trapecios y RK4 = Simpson (dato para el informe). Implementar en `metodos/edo.py` con tests de orden (1, 2 y 4). Decidir con Julian si se hace.
-- **Informe y exposición.** Los resultados y conclusiones de cada etapa están arriba y en las celdas "Qué muestra la etapa N" del notebook.
+- **Informe y exposición.** Los resultados y conclusiones de cada etapa están arriba y en las celdas "Qué muestra…" del notebook.
 - **Revisar `DEFENSA.md`** recién al final (ver memoria).
 
 Cómo trabajar con el notebook:
