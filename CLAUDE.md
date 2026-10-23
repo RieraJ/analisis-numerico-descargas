@@ -24,7 +24,7 @@ Python 3 con psutil, NumPy, pandas, Matplotlib, SciPy (solo tests), pytest y Jup
 ```
 captura/registrar.py   registra el contador de bytes de una interfaz cada h segundos → CSV
 captura/graficar.py    revisa una corrida: B(t) y paso real de muestreo
-datos/                 un CSV por corrida y corridas.csv (condiciones y tamaño exacto de cada una)
+datos/                 c1.csv … c4.csv (una captura por corrida) y corridas.csv (condiciones, tamaño exacto, señal, velocidad de wget)
 metodos/
   derivacion.py        fórmulas centradas de 3 y 5 puntos (descentradas del mismo orden en los extremos)
   integracion.py       trapecios y Simpson 1/3 (paso uniforme; si los intervalos son impares, el último por trapecios)
@@ -32,11 +32,12 @@ metodos/
   regresion.py         mínimos cuadrados lineal (ecuaciones normales resueltas a mano)
   raices.py            bisección, punto fijo, Newton-Raphson, secante (devuelven raíz + historial de iteraciones)
 analisis/
-  preparacion.py       etapa 0: carga, paso medio, submuestreo, tasa de fondo, v∞, inicio y fin, sobrecarga
+  preparacion.py       etapa 0: carga, paso medio, submuestreo, tasa de fondo, v∞, inicio y fin, sobrecarga;
+                       preparar_corrida(t, B, S) hace todo y devuelve un diccionario
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
-analisis.ipynb         experimentos, tablas y gráficos del informe
+analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
-requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv, DEFENSA.md), README.md
+requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv, DEFENSA.md, .~lock.*), README.md
 ```
 
 ## Especificación de la captura
@@ -94,7 +95,7 @@ Notas:
 - **Etapa 5:** Newton y Lagrange dan el mismo polinomio; la diferencia es de forma y costo, no de precisión. Con muchos nodos, el polinomio oscila (Runge); el spline no.
 - Dato para el informe: con `dD/dt = v(t)` (lado derecho que no depende de D), Heun equivale a trapecios y RK4 a Simpson 1/3.
 
-## Corridas previstas
+## Corridas
 
 Todas por Wi-Fi (la notebook no tiene puerto de red), en el departamento de Julian (red sin otros usuarios).
 
@@ -119,11 +120,30 @@ Procedimiento (dos terminales):
 - C2: Netflix arrancado antes del registro, calidad fija (alta), TV conectado por Wi-Fi.
 - No editar los CSV después de la captura.
 
-Hechas el 23/10 (detalle en `datos/corridas.csv`): cerca = 4 m del router; lejos = balcón a 6 m con la puerta cerrada. Las cuatro con 0 lecturas salteadas y más de 30 s quietos al principio y al final. A C4 le falta la señal (no se midió) y a C1, la línea final de `wget`.
+Hechas el 23/10 con `ubuntu-26.04.1-live-server-amd64.iso` (S = 2 927 861 760 B); detalle en `datos/corridas.csv`. Cerca = 4 m del router; lejos = balcón a 6 m con la puerta cerrada. Las cuatro con 0 lecturas salteadas, paso medio 0,100000 s (desvío ≈ 10⁻⁴ s) y más de 30 s quietos al principio y al final. A C4 le falta la señal (no se midió) y a C1, la línea final de `wget`.
 
 Para el informe:
 - El contador solo ve el tráfico de la notebook. En C2, Netflix no aparece como bytes: influye solo porque compite por el Wi-Fi.
 - `wget` muestra las velocidades en unidades de 1024 aunque diga "MB/s", y es la velocidad media S/(t_fin − t_ini), no v∞. Confirmado en la etapa 0: en C2 a C4, S/duración coincide con lo de `wget` tomando 1 MB = 2²⁰ B.
+
+## Resultados (datos reales)
+
+Etapa 0 (`preparar_corrida`, sección 0 de `analisis.ipynb`):
+
+| | v∞ | t_ini → t_fin | Duración | p | r_f |
+|---|---|---|---|---|---|
+| C1 | 11,58 MB/s | 32,6 → 299,0 s | 266,4 s | 5,07 % | 928 B/s |
+| C2 | 11,27 MB/s | 35,6 → 309,4 s | 273,8 s | 5,05 % | 620 B/s |
+| C3 | 9,43 MB/s | 34,9 → 361,5 s | 326,6 s | 5,01 % | 886 B/s |
+| C4 | 4,67 MB/s | 33,7 → 682,2 s | 648,5 s | 5,02 % | 428 B/s |
+
+- p ≈ 5 % en las cuatro: depende del protocolo, no de la red. Es el borde superior de lo esperado (3–5 %).
+- Netflix (C2) bajó v∞ menos de 3 % respecto de C1. La banda (C1 → C3) y la distancia (C3 → C4) pesan mucho más.
+- Decisiones de implementación, para explicar en la defensa:
+  - r_f: cada tramo de 30 s se ajusta por separado y se promedian las pendientes (una sola regresión con los dos tramos no sirve, por el salto de la descarga).
+  - t_ini y t_fin salen de la derivada de 3 puntos, así que tienen error de hasta un paso h. En el test sintético el inicio da 30,1 s contra 30,0 (tolerancia 1,01·h por redondeo).
+  - B_d(t_fin) se toma en el último instante con v > 0,1·v∞; los bytes que faltan del último paso cambian p en menos de v∞·h/S ≈ 0,04 puntos.
+- Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
 
@@ -139,4 +159,19 @@ Para el informe:
 - [ ] `analisis.ipynb` con las etapas 0 a 6
 - [ ] Informe y exposición
 
-Para retomar (23/10): la etapa 0 ya está en `analisis/preparacion.py` y en la primera sección de `analisis.ipynb`. Sigue la etapa 1 (velocímetro). Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
+## Para retomar (23/10)
+
+Hecho en esta sesión: corridas limpias y versionadas, tests de raíces con magnitudes reales, etapa 0 con tests y aplicada a C1 a C4 en el notebook. 75 tests pasan. Hay 4 commits locales sin `git push` (`main` adelantado 4 respecto de `origin/main`).
+
+Sigue la **etapa 1 (velocímetro)**, en una sección nueva de `analisis.ipynb`:
+- Para cada corrida, `v` con `derivada_3_puntos` y `derivada_5_puntos` sobre `B_d`, con h = 0,1 s y con h = 1 s (`submuestrear(t, B_d, 10)`).
+- Referencia: v∞ de la etapa 0. Medir en el tramo de régimen (20–80 % de los bytes) la media y el desvío de v respecto de v∞, para las cuatro combinaciones (fórmula × h).
+- Lo esperado según el modelo (punto 3): con h = 0,1 s el desvío es grande por el ruido (más en 5 puntos que en 3) y con h = 1 s baja. Se informa lo que dé, sin forzarlo.
+- Gráfico: v(t) de una corrida (C1) con las cuatro combinaciones, mismo eje, y v∞ como línea horizontal.
+- Si hace falta una función reutilizable (por ejemplo, el tramo de régimen como máscara), va a `analisis/` con test; el notebook solo llama.
+
+Cómo trabajar con el notebook:
+- `analisis.ipynb` ya tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`).
+- Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
+
+Después: etapas 2 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
