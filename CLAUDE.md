@@ -41,9 +41,11 @@ analisis/
                        volumen_desde_velocidad → D por trapecios y Simpson + referencia B_d(t_b) − B_d(t_a)
                        errores_por_desfase → error relativo de los k desfases (etapa 3)
   modelo.py            etapa 4: rampa, ajustar_tau (regresión por el origen), origen_libre (control),
-                       r2_velocidad_regimen, velocidad_modelo (v̂), descargado_modelo (D̂)
+                       r2_velocidad_regimen, velocidad_modelo (v̂), descargado_modelo (D̂), f_fin, phi_fin
   faltantes.py         etapa 5: reconstruir_bloque (lineal, Newton y Lagrange grado 3, spline con todas),
                        error_maximo, posiciones_equiespaciadas, hueco_con_caida
+  prediccion.py        etapa 6: indice_progreso, estimar_parametros (con datos parciales), resolver_fin
+                       (4 métodos), fines_ingenuos, predecir_fin, velocidad_por_tramos
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -225,6 +227,19 @@ Etapa 5 (`analisis/faltantes.py`, sección 5 del notebook). Huecos de k = 1, 5, 
 - Caída dentro del hueco: ningún método la recupera.
 - Sin Runge con grado 3 ni con el spline.
 
+Etapa 6 (`analisis/prediccion.py`, sección 6 del notebook). Con datos hasta el progreso q: v∞ de 20–80 % de lo descargado hasta ahora, t_ini y τ con ese v∞, S' = S·(1 + p_C1). Fin previsto = t_ini + t*. Ingenuas: (S' − B_d)/v con v instantánea (3 puntos, regresiva) o media del último segundo. |Error| en s sobre 18 puntos (q = 10 a 95 %), mediana / máximo:
+
+| | modelo | ingenua instantánea | ingenua último segundo |
+|---|---|---|---|
+| C1 | 0,4 / 8,8 | 13,6 / 331 | 4,0 / 8,8 |
+| C2 | 5,4 / 10,1 | 17,3 / 82 | 5,1 / 12,3 |
+| C3 | 0,7 / 14,0 | 49,9 / 383 | 11,8 / 142 |
+| C4 | 58,9 / 110 | 40,8 / 270 | 32,7 / 918 |
+
+- Raíces: los 4 métodos coinciden (< 10⁻¹⁰ s). e^(−t/τ) ≈ e^(−800) = 0 en punto flotante: f es una recta y S'/v∞ + τ es exacto. Punto fijo, Newton y secante: 2 iteraciones (la 2.ª confirma); bisección 43–44. El orden de convergencia no se ve con datos reales (sí en `tests/test_raices.py`).
+- C4: la velocidad subió 28 % durante la descarga (4,24 → 5,42 MB/s por quintil de bytes); el modelo (v∞ constante) predice tarde. C1 y C3 estables; C2 sube un poco.
+- Instantánea inservible por las caídas. Último segundo sigue los cambios pero salta cuando cae en una caída.
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -243,24 +258,19 @@ Etapa 5 (`analisis/faltantes.py`, sección 5 del notebook). Huecos de k = 1, 5, 
 - [x] Etapa 3: `errores_por_desfase` con tests y sección en el notebook
 - [x] Etapa 4: `analisis/modelo.py` con tests y sección en el notebook
 - [x] Etapa 5: `analisis/faltantes.py` con tests y sección en el notebook
-- [ ] `analisis.ipynb` con la etapa 6
+- [x] Etapa 6: `analisis/prediccion.py` con tests y sección en el notebook
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: etapas 0 a 5 con tests y aplicadas a C1 a C4 en el notebook. 104 tests pasan.
+Hecho: las etapas 0 a 6 del análisis, con tests y aplicadas a C1 a C4 en el notebook. 111 tests pasan.
 
-Sigue la **etapa 6 (predicción del fin)**, la última del análisis, en una sección nueva de `analisis.ipynb`:
-- Para cada corrida, con los datos hasta el 25, 50 y 75 % del progreso (B_d ≤ fracción·S'), estimar v∞ (regresión de B_d en lo que haya de régimen: desde el 20 % de los bytes hasta el corte) y τ (etapa 4, `ajustar_tau`; la rampa ya está entera al 25 %).
-- Resolver `f(t) = D̂(t) − S' = 0`, con `S' = S·(1 + p_C1)`, por bisección, punto fijo, Newton y secante (`metodos/raices.py`). Newton usa f'(t) = v̂(t); punto fijo usa φ(t) = S'/v∞ + τ(1 − e^(−t/τ)).
-- Agregar f y φ a `analisis/modelo.py`, con tests.
-- Comparar el fin previsto (t_ini + t*) contra t_fin real y contra la estimación ingenua: t_actual + (S' − B_d actual) / v actual. Como v tiene caídas (etapa 1), conviene informar la ingenua con v de 3 puntos, h = 0,1 s, y también con la velocidad media del último segundo o similar; decidirlo mirando los datos y documentarlo.
-- Informar iteraciones de cada método (historial) y su convergencia (orden observado, ya verificado en los tests de raíces).
-- Ojo con C4: con todos los datos, S'/v∞ + τ ya se adelanta unos 10 s al fin real (exploración de la etapa 4); ver por qué (¿v∞ de 20–80 % distinto de la velocidad del último tramo?).
+Queda:
+- **Opcional: EDO.** Euler, Heun y RK4 sobre `dv/dt = (v∞ − v)/τ` contra la solución exacta `v̂`; con `dD/dt = v(t)`, Heun = trapecios y RK4 = Simpson (dato para el informe). Implementar en `metodos/edo.py` con tests de orden (1, 2 y 4). Decidir con Julian si se hace.
+- **Informe y exposición.** Los resultados y conclusiones de cada etapa están arriba y en las celdas "Qué muestra la etapa N" del notebook.
+- **Revisar `DEFENSA.md`** recién al final (ver memoria).
 
 Cómo trabajar con el notebook:
-- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S`, todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`) y `tau` (etapa 4). También `colores` (uno por corrida).
-- Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb` (tarda ~30 s por la etapa 5).
+- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S`, todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`) y `tau` (etapa 4). También `colores` (uno por corrida) y `p_C1`.
+- Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb` (tarda ~30 s).
 - Para editar celdas desde un script, usar `nbformat` (mantiene los ids de las celdas).
-
-Después: opcional EDO (Euler, Heun, RK4), informe y exposición. Al final, revisar `DEFENSA.md` (ver memoria).

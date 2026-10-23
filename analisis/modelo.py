@@ -82,3 +82,16 @@ def velocidad_modelo(t, v_inf, tau):
 def descargado_modelo(t, v_inf, tau):
     """D̂(t) = v∞ [t − τ(1 − e^(−t/τ))],  la integral de v̂ desde 0 hasta t."""
     return v_inf * (t - tau * (1 - np.exp(-t / tau)))
+
+
+def f_fin(t, v_inf, tau, S_prima):
+    """f(t) = D̂(t) − S'.  Su raíz es la duración prevista de la descarga.  f'(t) = v̂(t)."""
+    return descargado_modelo(t, v_inf, tau) - S_prima
+
+
+def phi_fin(t, v_inf, tau, S_prima):
+    """φ(t) = S'/v∞ + τ(1 − e^(−t/τ)),  despejando t de f(t) = 0.
+
+    φ'(t) = e^(−t/τ), entre 0 y 1 para t > 0: la iteración de punto fijo converge.
+    """
+    return S_prima / v_inf + tau * (1 - np.exp(-t / tau))

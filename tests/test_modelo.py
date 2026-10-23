@@ -6,7 +6,9 @@ import pytest
 from analisis.modelo import (
     ajustar_tau,
     descargado_modelo,
+    f_fin,
     origen_libre,
+    phi_fin,
     r2_velocidad_regimen,
     rampa,
     velocidad_modelo,
@@ -91,3 +93,14 @@ def test_descargado_modelo_es_la_integral_de_la_velocidad():
     assert np.allclose(derivada_3_puntos(D, h), velocidad_modelo(t, V_INF, TAU), rtol=0, atol=1e-4 * V_INF)
     # Para t ≫ τ, D̂ ≈ v∞(t − τ)
     assert D[-1] == pytest.approx(V_INF * (t[-1] - TAU))
+
+
+# --- f y φ de la etapa 6 -------------------------------------------------------
+
+def test_f_y_phi_en_la_duracion_exacta():
+    # Duración T: S' = D̂(T). Entonces f(T) = 0 y φ(T) = T.
+    T = 250.0
+    S_prima = descargado_modelo(T, V_INF, TAU)
+    assert f_fin(T, V_INF, TAU, S_prima) == pytest.approx(0, abs=1e-6)
+    assert phi_fin(T, V_INF, TAU, S_prima) == pytest.approx(T)
+    assert f_fin(0.0, V_INF, TAU, S_prima) == -S_prima
