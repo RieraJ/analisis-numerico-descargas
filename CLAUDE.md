@@ -161,7 +161,7 @@ Etapa 0 (`preparar_corrida`, sección 0 de `analisis.ipynb`):
 
 ## Para retomar (23/10)
 
-Hecho en esta sesión: corridas limpias y versionadas, tests de raíces con magnitudes reales, etapa 0 con tests y aplicada a C1 a C4 en el notebook. 75 tests pasan. Hay 4 commits locales sin `git push` (`main` adelantado 4 respecto de `origin/main`).
+Hecho en esta sesión: corridas limpias y versionadas, tests de raíces con magnitudes reales, etapa 0 con tests y aplicada a C1 a C4 en el notebook. 75 tests pasan. Todo subido a GitHub.
 
 Sigue la **etapa 1 (velocímetro)**, en una sección nueva de `analisis.ipynb`:
 - Para cada corrida, `v` con `derivada_3_puntos` y `derivada_5_puntos` sobre `B_d`, con h = 0,1 s y con h = 1 s (`submuestrear(t, B_d, 10)`).
