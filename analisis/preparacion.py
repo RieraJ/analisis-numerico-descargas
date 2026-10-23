@@ -55,15 +55,23 @@ def quitar_fondo(t, B, r_f):
     return B - r_f * t
 
 
+def tramo_regimen(B_d, desde=0.2, hasta=0.8):
+    """Máscara de las lecturas entre el 20 % y el 80 % de los bytes de la descarga.
+
+    Ahí el arranque ya pasó y el final todavía no llegó. El total es B_d en la
+    última lectura, que ya está en los 30 s quietos del final.
+    """
+    total = B_d[-1]
+    return (B_d >= desde * total) & (B_d <= hasta * total)
+
+
 def velocidad_regimen(t, B_d, desde=0.2, hasta=0.8):
     """Velocidad en régimen v∞, en B/s.
 
-    Pendiente de la recta de mínimos cuadrados de B_d(t) entre el 20 % y el
-    80 % de los bytes de la descarga. Ahí el arranque ya pasó y el final
-    todavía no llegó.
+    Pendiente de la recta de mínimos cuadrados de B_d(t) en el tramo de
+    régimen (entre el 20 % y el 80 % de los bytes de la descarga).
     """
-    total = B_d[-1]
-    tramo = (B_d >= desde * total) & (B_d <= hasta * total)
+    tramo = tramo_regimen(B_d, desde, hasta)
     _, v_inf = regresion_lineal(t[tramo], B_d[tramo])
     return v_inf
 

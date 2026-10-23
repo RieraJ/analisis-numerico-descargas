@@ -33,7 +33,10 @@ metodos/
   raices.py            bisección, punto fijo, Newton-Raphson, secante (devuelven raíz + historial de iteraciones)
 analisis/
   preparacion.py       etapa 0: carga, paso medio, submuestreo, tasa de fondo, v∞, inicio y fin, sobrecarga;
-                       preparar_corrida(t, B, S) hace todo y devuelve un diccionario
+                       preparar_corrida(t, B, S) hace todo y devuelve un diccionario;
+                       tramo_regimen(B_d): máscara del 20–80 % de los bytes
+  velocimetro.py       etapa 1: velocidades(t, B_d, k) con 3 y 5 puntos (una lectura de cada k),
+                       error_en_regimen(v, v∞, B_d) → media y desvío de v − v∞
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -143,6 +146,21 @@ Etapa 0 (`preparar_corrida`, sección 0 de `analisis.ipynb`):
   - r_f: cada tramo de 30 s se ajusta por separado y se promedian las pendientes (una sola regresión con los dos tramos no sirve, por el salto de la descarga).
   - t_ini y t_fin salen de la derivada de 3 puntos, así que tienen error de hasta un paso h. En el test sintético el inicio da 30,1 s contra 30,0 (tolerancia 1,01·h por redondeo).
   - B_d(t_fin) se toma en el último instante con v > 0,1·v∞; los bytes que faltan del último paso cambian p en menos de v∞·h/S ≈ 0,04 puntos.
+
+Etapa 1 (`analisis/velocimetro.py`, sección 1 del notebook). Desvío de v − v∞ en régimen, en MB/s:
+
+| | 3 p., h = 0,1 | 5 p., h = 0,1 | 3 p., h = 1 | 5 p., h = 1 | mediana de v | v < 0,5·v∞ |
+|---|---|---|---|---|---|---|
+| C1 | 1,94 | 2,08 | 0,93 | 1,09 | 12,00 | 2,7 % |
+| C2 | 2,02 | 2,21 | 0,93 | 1,08 | 11,81 | 3,2 % |
+| C3 | 2,18 | 2,45 | 0,95 | 1,12 | 10,06 | 4,5 % |
+| C4 | 1,48 | 1,59 | 0,92 | 0,99 | 4,90 | 6,5 % |
+
+- Media de v − v∞ menor al 1 % de v∞: sin sesgo.
+- El modelo de ruido blanco en B (punto 3) **no** describe los datos: de h = 0,1 a 1 s el desvío baja 1,6–2,3 veces (no 10) y 5 p./3 p. da 1,07–1,18 (no 1,34). El test `test_amplificacion_del_ruido` muestra que con ruido blanco sí da 0,71/h y 0,95/h.
+- Lo que hay son caídas reales de velocidad de unas décimas de segundo, a veces hasta 0 (gráfico de C1). Por eso la mediana de v supera a v∞ (que es la media, con caídas incluidas). Más caídas con peor enlace: v < 0,9·v∞ en 8 % (C1), 12 % (C2), 20 % (C3), 31 % (C4).
+- 3 puntos con h = 1 s es la combinación de menor desvío en las cuatro.
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -156,22 +174,23 @@ Etapa 0 (`preparar_corrida`, sección 0 de `analisis.ipynb`):
 - [x] `metodos/raices.py` con tests
 - [x] Revisar con Julian los valores sintéticos de los tests (23/10: S y τ de raíces llevados a las magnitudes reales)
 - [x] Etapa 0: `analisis/preparacion.py` con tests
-- [ ] `analisis.ipynb` con las etapas 0 a 6
+- [x] Etapa 1: `analisis/velocimetro.py` con tests y sección en el notebook
+- [ ] `analisis.ipynb` con las etapas 2 a 6
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho en esta sesión: corridas limpias y versionadas, tests de raíces con magnitudes reales, etapa 0 con tests y aplicada a C1 a C4 en el notebook. 75 tests pasan. Todo subido a GitHub.
+Hecho: etapas 0 y 1 con tests y aplicadas a C1 a C4 en el notebook. 80 tests pasan.
 
-Sigue la **etapa 1 (velocímetro)**, en una sección nueva de `analisis.ipynb`:
-- Para cada corrida, `v` con `derivada_3_puntos` y `derivada_5_puntos` sobre `B_d`, con h = 0,1 s y con h = 1 s (`submuestrear(t, B_d, 10)`).
-- Referencia: v∞ de la etapa 0. Medir en el tramo de régimen (20–80 % de los bytes) la media y el desvío de v respecto de v∞, para las cuatro combinaciones (fórmula × h).
-- Lo esperado según el modelo (punto 3): con h = 0,1 s el desvío es grande por el ruido (más en 5 puntos que en 3) y con h = 1 s baja. Se informa lo que dé, sin forzarlo.
-- Gráfico: v(t) de una corrida (C1) con las cuatro combinaciones, mismo eje, y v∞ como línea horizontal.
-- Si hace falta una función reutilizable (por ejemplo, el tramo de régimen como máscara), va a `analisis/` con test; el notebook solo llama.
+Sigue la **etapa 2 (volumen desde la velocidad)**, en una sección nueva de `analisis.ipynb`:
+- Para cada corrida, tomar v (3 puntos, h = 0,1 s, de la etapa 1) cada H = 1 s y estimar `D = ∫ v dt` entre t_ini y t_fin por trapecios y por Simpson.
+- Referencia: `B_d(t_fin) − B_d(t_ini)`. Informar error absoluto y relativo de cada método; después, p estimado con D contra S.
+- Control (modelo, punto 4): con H = h, trapecios sobre la derivada de 3 puntos telescopa y recupera B_d salvo los extremos.
+- Tener en cuenta lo visto en la etapa 1: v tiene caídas cortas, así que tomar v cada 1 s puede caer o no en una caída. Se informa lo que dé.
+- Lo reutilizable (muestrear v cada H dentro de [t_ini, t_fin]) va a `analisis/`, con test.
 
 Cómo trabajar con el notebook:
-- `analisis.ipynb` ya tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`).
+- `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`).
 - Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
 
-Después: etapas 2 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
+Después: etapas 3 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.

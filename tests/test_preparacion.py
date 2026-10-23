@@ -12,6 +12,7 @@ from analisis.preparacion import (
     sobrecarga,
     submuestrear,
     tasa_de_fondo,
+    tramo_regimen,
     velocidad_regimen,
 )
 
@@ -83,6 +84,11 @@ def test_tasa_de_fondo_recupera_la_pendiente():
 def test_quitar_fondo_deja_solo_la_descarga():
     t, B, _ = corrida_sintetica()
     assert np.allclose(quitar_fondo(t, B, R_F), descargado(t))
+
+
+def test_tramo_regimen_entre_20_y_80_por_ciento():
+    B_d = np.array([0, 10, 20, 50, 80, 90, 100, 100], dtype=float)
+    assert np.array_equal(tramo_regimen(B_d), [False, False, True, True, True, False, False, False])
 
 
 def test_velocidad_regimen_recupera_v_inf():
