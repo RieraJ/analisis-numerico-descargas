@@ -37,6 +37,8 @@ analisis/
                        tramo_regimen(B_d): máscara del 20–80 % de los bytes
   velocimetro.py       etapa 1: velocidades(t, B_d, k) con 3 y 5 puntos (una lectura de cada k),
                        error_en_regimen(v, v∞, B_d) → media y desvío de v − v∞
+  volumen.py           etapa 2: indices_muestreo (una de cada k, alineadas con el fin, con desfase),
+                       volumen_desde_velocidad → D por trapecios y Simpson + referencia B_d(t_b) − B_d(t_a)
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
@@ -161,6 +163,20 @@ Etapa 1 (`analisis/velocimetro.py`, sección 1 del notebook). Desvío de v − v
 - Lo que hay son caídas reales de velocidad de unas décimas de segundo, a veces hasta 0 (gráfico de C1). Por eso la mediana de v supera a v∞ (que es la media, con caídas incluidas). Más caídas con peor enlace: v < 0,9·v∞ en 8 % (C1), 12 % (C2), 20 % (C3), 31 % (C4).
 - 3 puntos con h = 1 s es la combinación de menor desvío en las cuatro.
 
+Etapa 2 (`analisis/volumen.py`, sección 2 del notebook). v de 3 puntos (h = 0,1 s) muestreada cada H = 1 s; las muestras se alinean con t_fin y van hacia atrás hasta pasar t_ini (paso uniforme, cubre toda la descarga). Se prueban los 10 desfases posibles (0 a 0,9 s). Error relativo de D contra B_d(t_b) − B_d(t_a), en %:
+
+| | trapecios: mín / máx | promedio | Simpson: mín / máx | promedio |
+|---|---|---|---|---|
+| C1 | −1,22 / +0,78 | −0,02 | −0,88 / +1,24 | +0,26 |
+| C2 | −1,47 / +1,64 | −0,01 | −1,39 / +1,75 | +0,08 |
+| C3 | −0,73 / +0,64 | −0,01 | −0,26 / +1,08 | +0,51 |
+| C4 | −1,77 / +1,76 | −0,00 | −1,20 / +1,67 | +0,19 |
+
+- Control (H = h): error < 0,012 % (telescopado).
+- Con H = 1 s, el signo y el tamaño del error dependen del desfase: las muestras caen o no en las caídas cortas de la etapa 1.
+- Simpson no mejora a trapecios (v no es suave). El promedio de trapecios sobre los 10 desfases es ≈ 0 porque juntos usan todas las lecturas; el de Simpson queda positivo (0,1–0,5 %). La causa de ese sesgo no se investigó.
+- p con D en lugar del contador: de 3,2 a 6,9 % según el desfase, contra 5,0 % del contador. El error de integración es del orden de la sobrecarga: para medir p hace falta el contador.
+
 - Para la etapa 4: en las cuatro corridas la velocidad llega al régimen en menos de 0,5 s, así que la rampa tiene pocos puntos con h = 0,1 s. Es probable el caso "τ mal determinado" (ver modelo, punto 5); se confirma ahí.
 
 ## Estado
@@ -175,22 +191,23 @@ Etapa 1 (`analisis/velocimetro.py`, sección 1 del notebook). Desvío de v − v
 - [x] Revisar con Julian los valores sintéticos de los tests (23/10: S y τ de raíces llevados a las magnitudes reales)
 - [x] Etapa 0: `analisis/preparacion.py` con tests
 - [x] Etapa 1: `analisis/velocimetro.py` con tests y sección en el notebook
-- [ ] `analisis.ipynb` con las etapas 2 a 6
+- [x] Etapa 2: `analisis/volumen.py` con tests y sección en el notebook
+- [ ] `analisis.ipynb` con las etapas 3 a 6
 - [ ] Informe y exposición
 
 ## Para retomar (23/10)
 
-Hecho: etapas 0 y 1 con tests y aplicadas a C1 a C4 en el notebook. 80 tests pasan.
+Hecho: etapas 0, 1 y 2 con tests y aplicadas a C1 a C4 en el notebook. 87 tests pasan.
 
-Sigue la **etapa 2 (volumen desde la velocidad)**, en una sección nueva de `analisis.ipynb`:
-- Para cada corrida, tomar v (3 puntos, h = 0,1 s, de la etapa 1) cada H = 1 s y estimar `D = ∫ v dt` entre t_ini y t_fin por trapecios y por Simpson.
-- Referencia: `B_d(t_fin) − B_d(t_ini)`. Informar error absoluto y relativo de cada método; después, p estimado con D contra S.
-- Control (modelo, punto 4): con H = h, trapecios sobre la derivada de 3 puntos telescopa y recupera B_d salvo los extremos.
-- Tener en cuenta lo visto en la etapa 1: v tiene caídas cortas, así que tomar v cada 1 s puede caer o no en una caída. Se informa lo que dé.
-- Lo reutilizable (muestrear v cada H dentro de [t_ini, t_fin]) va a `analisis/`, con test.
+Sigue la **etapa 3 (efecto del muestreo)**, en una sección nueva de `analisis.ipynb`:
+- La misma integración de la etapa 2 con H = 1, 5, 10 y 30 s (k = 10, 50, 100, 300), con `volumen_desde_velocidad`.
+- Como en la etapa 2 el error depende del desfase, para cada H usar los k desfases y resumir con el error cuadrático medio (y el máximo). Un solo desfase da un valor al azar.
+- Gráfico log-log: error contra H, trapecios y Simpson, una curva por corrida. Informar la pendiente que dé (regresión lineal sobre log-log, con `metodos/regresion.py`); no se espera 2 ni 4 (ver nota de la etapa 3).
+- Si hace falta una función nueva (por ejemplo, el error sobre todos los desfases), va a `analisis/volumen.py` con test.
 
 Cómo trabajar con el notebook:
 - `analisis.ipynb` tiene `resultados[c]` (c = "C1"…"C4") con `t`, `B`, `S` y todo lo que devuelve `preparar_corrida` (`h`, `r_f`, `B_d`, `v`, `v_inf`, `i_ini`, `i_fin`, `t_ini`, `t_fin`, `p`).
 - Para regenerar las salidas: `.venv/bin/jupyter nbconvert --to notebook --execute --inplace analisis.ipynb`.
+- Para editar celdas desde un script, usar `nbformat` (mantiene los ids de las celdas).
 
-Después: etapas 3 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
+Después: etapas 4 a 6 en orden, una por paso y commit. Lo que se repita entre etapas (D̂, f y φ del modelo; borrar bloques de lecturas) va a `analisis/modelo.py`, con tests.
