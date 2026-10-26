@@ -50,6 +50,7 @@ analisis/
   edo_modelo.py        opcional: ecuacion_velocidad, error_velocidad (contra v̂), volumen_con_edo (dD/dt = v medida)
 tests/                 pytest, un archivo por módulo de metodos/ y de analisis/
 analisis.ipynb         una sección por etapa: solo llama a analisis/ y muestra tablas y gráficos
+informe/exportar_figuras.py  guarda los gráficos del notebook en informe/figuras/ (para el informe en Google Docs)
 DEFENSA.md             preguntas probables en la exposición (solo local, en .gitignore)
 requirements.txt, .gitignore (.venv, __pycache__, .ipynb_checkpoints, *.iso, datos/prueba*.csv, DEFENSA.md, .~lock.*), README.md
 ```
@@ -269,14 +270,18 @@ EDO (`metodos/edo.py`, `analisis/edo_modelo.py`, última sección del notebook).
 - [x] Etapa 5: `analisis/faltantes.py` con tests y sección en el notebook
 - [x] Etapa 6: `analisis/prediccion.py` con tests y sección en el notebook
 - [x] Opcional EDO: `metodos/edo.py` y `analisis/edo_modelo.py` con tests y sección en el notebook
-- [ ] Informe y exposición
+- [x] Informe en Google Docs (26/10): https://docs.google.com/document/d/1OhFcgu_wd4jSOmbeRvEm5wYMkgV5ebogCE3NT0V6VPw/edit
+- [ ] Completar en el informe: carátula, apuntes de la cátedra, "Qué se aprendió" e índice automático (Insertar > Índice)
+- [ ] Exposición
 
-## Para retomar (23/10)
+## Para retomar (26/10)
 
-Hecho: las etapas 0 a 6 y la parte opcional de EDO, con tests y aplicadas a C1 a C4 en el notebook. 133 tests pasan.
+Hecho: las etapas 0 a 6 y la parte opcional de EDO, con tests y aplicadas a C1 a C4 en el notebook (133 tests pasan), y el informe en Google Docs (link en Estado), con la estructura de la consigna.
 
 Queda:
-- **Informe y exposición.** Los resultados y conclusiones de cada etapa están arriba y en las celdas "Qué muestra…" del notebook.
+- **Completar el informe:** marcadores entre corchetes de la carátula y la bibliografía, y el párrafo "Qué se aprendió".
+- **Exposición.**
+- Las figuras del informe se insertan desde `informe/figuras/` en GitHub (repo público). Si cambia un gráfico: ejecutar el notebook, `python informe/exportar_figuras.py`, push, y reemplazar la imagen en el doc.
 - **Revisar `DEFENSA.md`** recién al final (ver memoria).
 
 Cómo trabajar con el notebook:
